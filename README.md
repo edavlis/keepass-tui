@@ -10,8 +10,9 @@ It acts as a "wrapper" for keepass-cli, becuase i prefer a tui to a cli
 - a c compiler
 - keepassxc-cli
 
-## to do
-- replace "outputter" with keepass-cli
-- parse output wihtout storing in file
+## to do, in order of importance
+    ✓ replace "outputter" with keepass-cli
     ✓ add makefile
+- make it output / input properly ,coherently
+- parse output wihtout storing in file
 - add better err handling
