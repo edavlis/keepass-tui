@@ -2,9 +2,24 @@
 #include <string.h>
 #include <unistd.h>
 
+void read_from_keepassxc(char read_buffer[4096], int read_buffer_size,  char buffer[4096], int buffer_size, int out_of_child[2], int in_to_child[2]) {
+
+      int size_read = read(out_of_child[0],read_buffer,read_buffer_size -1); 
+      if (size_read > 0) {
+        read_buffer[size_read] = '\0';
+      printf("%s", read_buffer);
+      fflush(stdout);
+      }
+      if (size_read == -1) {
+      printf("Failed to read from child read pipe");
+      }
+      if (size_read == 0) {
+        printf("Reached end of input stream");
+      }
+}
+
 
 int main(int argc, char *argv[]) {
-
   
   // create pipes
     int in_to_child[2];
@@ -46,34 +61,27 @@ int main(int argc, char *argv[]) {
       close(out_of_child[1]);
 
       // make buffers to write to
-      char read_buffer[64] = "";
-      char buffer[64] = "";
-
+      char read_buffer[64*64] = "";
+      char buffer[64*64] = "";
+      // read_from_keepassxc(read_buffer,sizeof(read_buffer), buffer,sizeof(buffer), out_of_child, in_to_child);
       //
-
-      while (1) {
+      do {
+        
       // read from the output of keepassxc-cli
-      int size_read = read(out_of_child[0],read_buffer,sizeof(read_buffer)); 
-      if (size_read == -1) {
-      printf("Failed to read from child read pipe");
-      }
-      if (size_read == 0) {
-        printf("Reached end of input stream");
-      }
-      printf("%s", read_buffer);
+      read_from_keepassxc(read_buffer,sizeof(read_buffer), buffer,sizeof(buffer), out_of_child, in_to_child);
+     
 
       // get ketboard input
       fgets(buffer, sizeof(buffer), stdin);
-
-      if (write(in_to_child[1], buffer, sizeof(buffer)) == -1) {
+      if (write(in_to_child[1], buffer, strlen(buffer)) == -1) {
         printf("Failed to write to child write pipe");
       };
+      fflush(stdin);
 
-      
-       // print output
-      // printf("you inputted %s", buffer);
-      // clsoe file descriptors
-      }
+      read_from_keepassxc(read_buffer,sizeof(read_buffer), buffer,sizeof(buffer), out_of_child, in_to_child);
+
+      } while (1);
+
      close(in_to_child[1]);
      close(out_of_child[0]);
 
@@ -88,3 +96,16 @@ int main(int argc, char *argv[]) {
 
 
 
+      //// read from the output of keepassxc-cli
+      //int size_read = read(out_of_child[0],read_buffer,sizeof(read_buffer) -1); 
+      //if (size_read > 0) {
+      //  read_buffer[size_read] = '\0';
+      //printf("%s", read_buffer);
+      //fflush(stdout);
+      //}
+      //if (size_read == -1) {
+      //printf("Failed to read from child read pipe");
+      //}
+      //if (size_read == 0) {
+      //  printf("Reached end of input stream");
+      //}
