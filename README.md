@@ -13,6 +13,7 @@ It acts as a "wrapper" for keepass-cli, becuase i prefer a tui to a cli
 ## to do, in order of importance
     ✓ replace "outputter" with keepass-cli
     ✓ add makefile
-- make it output / input properly ,coherently
+    ✓ make it output / input properly ,coherently
+- make a tui
 - parse output wihtout storing in file
 - add better err handling
