@@ -1,4 +1,4 @@
-CC=gcc
+CC=clang
 
 all: keepassxc-tui
 
@@ -9,4 +9,4 @@ all: keepassxc-tui
 #	$(CC) outputter.c -o outputter
 
 keepassxc-tui: keepassxc-tui.c
-	$(CC) keepassxc-tui.c -o keepassxc-tui
+	$(CC) -Wall -Wextra ./keepassxc-tui.c -o keepassxc-tui
