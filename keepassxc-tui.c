@@ -35,6 +35,24 @@ void clearscreen() {
     
 }
 
+int remove_promts_from_output(char *buffer) {
+  // find first newline
+  char *startLine = strchr(buffer, '\n');
+  if (!startLine) {
+    printf("Not any content");
+      return 1;
+  }
+  startLine++;
+  char *end = strrchr(startLine, '\n');
+  if (end == NULL || end == startLine) {
+      printf("not enough lines");
+      return 1;
+  }
+  *end = '\0';
+  return 0;
+
+}
+
 // input output functions
 int  readFromFileDescriptor(int filedescriptor) {
   char buffer[4095] = "";
@@ -76,7 +94,6 @@ int main(int argc, char *argv[]) {
     struct termios new_terminal_settings, old_terminal_settings; 
     tcgetattr(STDIN_FILENO, &new_terminal_settings);
     tcgetattr(STDIN_FILENO, &old_terminal_settings);
-    enable_raw_mode(&new_terminal_settings);
   
   
   // create pipes
@@ -109,6 +126,7 @@ int main(int argc, char *argv[]) {
       execlp("keepassxc-cli","keepassxc-cli", "open" , argv[1] , NULL);
       close(in_to_child[0]);
       close(out_of_child[1]);
+
     }  
 
       moveCursor((width_terminal / 2), (height_terminal / 2));
@@ -123,13 +141,16 @@ int main(int argc, char *argv[]) {
         
 
       // close file descriptors
-      close(in_to_child[0]);
-      close(out_of_child[1]);
+        close(in_to_child[0]);
+        close(out_of_child[1]);
 
       // make buffers to write to
-      char buffer[64*64] = "";
+        char keyboard_input_buffer[64*64] = "";
+        char child_output_data_buffer[128*128];
+
+    enable_raw_mode(&new_terminal_settings);
+    clearscreen();
       while (1) {
-        moveCursor((width_terminal / 2), (height_terminal / 2));
         clearscreen();
 
         int CHILDOUT_ready=poll(STDIN_CHILD_filedescriptors, 2, -1);
@@ -144,9 +165,8 @@ int main(int argc, char *argv[]) {
 
         // get ketboard input
         if (STDIN_CHILD_filedescriptors[1].revents & POLLIN) {
-          reset_terminal(&old_terminal_settings);
-        fgets(buffer, sizeof(buffer), stdin);
-        if (write(in_to_child[1], buffer, strlen(buffer)) == -1) {
+        read(STDIN_FILENO, keyboard_input_buffer, sizeof(keyboard_input_buffer));
+        if (write(in_to_child[1], keyboard_input_buffer, strlen(keyboard_input_buffer)) == -1) {
           printf("Failed to write to child write pipe");
         };
         }
