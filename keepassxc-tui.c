@@ -49,6 +49,7 @@ int remove_promts_from_output(char *buffer) {
       return 1;
   }
   *end = '\0';
+  strcpy(buffer, startLine);
   return 0;
 
 }
@@ -129,7 +130,6 @@ int main(int argc, char *argv[]) {
 
     }  
 
-      moveCursor((width_terminal / 2), (height_terminal / 2));
 
         struct pollfd STDIN_CHILD_filedescriptors[2]; // 0  is child 1 is stdin
 
@@ -149,6 +149,7 @@ int main(int argc, char *argv[]) {
         char child_output_data_buffer[128*128];
 
     enable_raw_mode(&new_terminal_settings);
+    moveCursor(1,1);
     clearscreen();
       while (1) {
         clearscreen();
