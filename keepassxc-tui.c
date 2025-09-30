@@ -6,77 +6,15 @@
 #include <sys/poll.h>
 #include <unistd.h>
 
-// termios functions
-void enable_raw_mode(struct termios *new_terminal_settings) {
-  new_terminal_settings->c_lflag &= ~( ICANON | ECHO);
-  tcsetattr(STDIN_FILENO,TCSANOW, new_terminal_settings);
-}
 
-void reset_terminal(struct termios *old_terminal_settings) {
-  tcsetattr(STDIN_FILENO,TCSANOW,old_terminal_settings);
-}
-
-void get_terminal_dimensions( int *width, int *height) {
-   
-  struct winsize windowSize;
-  ioctl(STDIN_FILENO,TIOCGWINSZ, &windowSize);
-
-  *width = windowSize.ws_col;
-  *height = windowSize.ws_row;
-
-}
-
-void moveCursor(int x, int y) {
-  printf("\033[%d;%dH", y, x);
-}
-
-void clearscreen() {
-  printf("\033[2J");
-    
-}
-
-int remove_promts_from_output(char *buffer) {
-  // find first newline
-  char *startLine = strchr(buffer, '\n');
-  if (!startLine) {
-    printf("Not any content");
-      return 1;
-  }
-  startLine++;
-  char *end = strrchr(startLine, '\n');
-  if (end == NULL || end == startLine) {
-      printf("not enough lines");
-      return 1;
-  }
-  *end = '\0';
-  strcpy(buffer, startLine);
-  return 0;
-
-}
-
-// input output functions
-int  readFromFileDescriptor(int filedescriptor) {
-  char buffer[4095] = "";
-  int amountRead = read(filedescriptor, buffer,4095 -1);
-    if (amountRead > 0 ) {
-      buffer[amountRead]  = '\0';   
-    }
-    if (amountRead == -1) 
-    {
-      return (-1);
-    }
-    if (amountRead == 0) 
-    {
-      return(-1);
-    }
-
-    printf("%s",buffer);
-    fflush(stdout);
-    
-    return 0;
-  }
-
-
+void enable_raw_mode(struct termios *new_terminal_settings) ;
+void reset_terminal(struct termios *old_terminal_settings) ;
+void get_terminal_dimensions( int *width, int *height) ;
+void moveCursor(int x, int y) ;
+void clearscreen() ;
+int remove_promts_from_output(char *buffer) ;
+char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize);
+void stringToLines(char *originalString, char **linedOutput) ;
 
 int main(int argc, char *argv[]) {
   
@@ -146,13 +84,14 @@ int main(int argc, char *argv[]) {
 
       // make buffers to write to
         char keyboard_input_buffer[64*64] = "";
-        char child_output_data_buffer[128*128];
+        char childOutputDataBuffer[128*128];
 
-    enable_raw_mode(&new_terminal_settings);
+
+
+
     moveCursor(1,1);
-    clearscreen();
+    // main part of main function
       while (1) {
-        clearscreen();
 
         int CHILDOUT_ready=poll(STDIN_CHILD_filedescriptors, 2, -1);
         if (CHILDOUT_ready == -1) {
@@ -160,7 +99,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (STDIN_CHILD_filedescriptors[0].revents & POLLIN) {
-        readFromFileDescriptor(out_of_child[0]);
+        memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
+        readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,128*128);
+        printf("%s",childOutputDataBuffer);
         fflush(stdout);
         }
 
@@ -179,3 +120,88 @@ int main(int argc, char *argv[]) {
        close(out_of_child[0]);
 
       }
+// termios functions
+void enable_raw_mode(struct termios *new_terminal_settings) {
+  new_terminal_settings->c_lflag &= ~( ICANON | ECHO);
+  tcsetattr(STDIN_FILENO,TCSANOW, new_terminal_settings);
+}
+
+void reset_terminal(struct termios *old_terminal_settings) {
+  tcsetattr(STDIN_FILENO,TCSANOW,old_terminal_settings);
+}
+
+void get_terminal_dimensions( int *width, int *height) {
+   
+  struct winsize windowSize;
+  ioctl(STDIN_FILENO,TIOCGWINSZ, &windowSize);
+
+  *width = windowSize.ws_col;
+  *height = windowSize.ws_row;
+
+}
+
+void moveCursor(int x, int y) {
+  printf("\033[%d;%dH", y, x);
+}
+
+void clearscreen() {
+  printf("\033[2J");
+    
+}
+
+int remove_promts_from_output(char *buffer) {
+  // find first newline
+  char *startLine = strchr(buffer, '\n');
+  if (!startLine) {
+    printf("Not any content");
+      return 1;
+  }
+  startLine++;
+  char *end = strrchr(startLine, '\n');
+  if (end == NULL || end == startLine) {
+      printf("not enough lines");
+      return 1;
+  }
+  *end = '\0';
+  strcpy(buffer, startLine);
+  return 0;
+
+}
+
+// input output functions
+char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize) {  
+  
+ 
+  int amountRead = read(filedescriptor,buffer,buffersize-1);
+    if (amountRead > 0 ) {
+      buffer[amountRead]  = '\0';   
+    }
+    if (amountRead == -1) 
+    {
+      printf("read fail, returned = -1");
+      return NULL;
+    }
+    if (amountRead == 0) {
+      printf("read fail, read returned= 0");
+    
+      return NULL;
+    }
+    fflush(stdout);
+
+    return buffer;
+    
+  }
+
+void stringToLines(char *originalString, char **linedOutput) {
+  
+  char *line;
+  line = strtok(originalString, "\n"); 
+  linedOutput[0] = line;
+  int i = 0;
+  while (line != NULL) {
+    linedOutput[i] = line;
+    i++;
+    line = strtok(NULL, "\n"); 
+  }
+  linedOutput[i] = NULL;
+}
