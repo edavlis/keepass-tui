@@ -1,3 +1,4 @@
+// INCLUDES
 #include <stdio.h>
 #include <termios.h>
 #include <poll.h>
@@ -7,15 +8,20 @@
 #include <unistd.h>
 
 
+
+// FUNCTION PROTOTYPES
 void enable_raw_mode(struct termios *new_terminal_settings) ;
 void reset_terminal(struct termios *old_terminal_settings) ;
 void get_terminal_dimensions( int *width, int *height) ;
 void moveCursor(int x, int y) ;
 void clearscreen() ;
-int remove_promts_from_output(char *buffer) ;
 char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize);
 void stringToLines(char *originalString, char **linedOutput) ;
+void checkForDatabase(char **lines, char *databasePrompt);
+                                                            
 
+
+// MAIN FUNCTION
 int main(int argc, char *argv[]) {
   
   // usage, refactor later
@@ -83,13 +89,15 @@ int main(int argc, char *argv[]) {
         close(out_of_child[1]);
 
       // make buffers to write to
-        char keyboard_input_buffer[64*64] = "";
-        char childOutputDataBuffer[128*128];
+        char keyboard_input_buffer[64*8] = "";
+        char childOutputDataBuffer[64*8];
+        char *linedChildOutputDataBuffer[64*8];
 
 
 
 
     moveCursor(1,1);
+    clearscreen();
     // main part of main function
       while (1) {
 
@@ -99,17 +107,31 @@ int main(int argc, char *argv[]) {
         }
 
         if (STDIN_CHILD_filedescriptors[0].revents & POLLIN) {
-        memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
-        readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,128*128);
-        printf("%s",childOutputDataBuffer);
-        fflush(stdout);
+          int i = 0;
+          memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
+          readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,128*128);
+          printf("%s", childOutputDataBuffer);
+          //stringToLines(childOutputDataBuffer,linedChildOutputDataBuffer);
+          //checkForDatabase(linedChildOutputDataBuffer,"> ");
+
+         // while (linedChildOutputDataBuffer[i] != NULL) {
+         //   if (strcmp(linedChildOutputDataBuffer[i], "") != 0) {
+         //     printf("%s\n",linedChildOutputDataBuffer[i]);
+         //   }
+         //   i++;
+         // }
+          fflush(stdout);
         }
 
         // get ketboard input
         if (STDIN_CHILD_filedescriptors[1].revents & POLLIN) {
-        read(STDIN_FILENO, keyboard_input_buffer, sizeof(keyboard_input_buffer));
-        if (write(in_to_child[1], keyboard_input_buffer, strlen(keyboard_input_buffer)) == -1) {
-          printf("Failed to write to child write pipe");
+          memset(keyboard_input_buffer,0,sizeof(keyboard_input_buffer));
+          read(STDIN_FILENO, keyboard_input_buffer, sizeof(keyboard_input_buffer));
+
+          if (write(in_to_child[1], keyboard_input_buffer, strlen(keyboard_input_buffer)) == -1) {
+            printf("Failed to write to child write pipe");
+            
+
         };
         }
 
@@ -120,6 +142,10 @@ int main(int argc, char *argv[]) {
        close(out_of_child[0]);
 
       }
+
+
+
+// FUNCTIONS 
 // termios functions
 void enable_raw_mode(struct termios *new_terminal_settings) {
   new_terminal_settings->c_lflag &= ~( ICANON | ECHO);
@@ -149,24 +175,6 @@ void clearscreen() {
     
 }
 
-int remove_promts_from_output(char *buffer) {
-  // find first newline
-  char *startLine = strchr(buffer, '\n');
-  if (!startLine) {
-    printf("Not any content");
-      return 1;
-  }
-  startLine++;
-  char *end = strrchr(startLine, '\n');
-  if (end == NULL || end == startLine) {
-      printf("not enough lines");
-      return 1;
-  }
-  *end = '\0';
-  strcpy(buffer, startLine);
-  return 0;
-
-}
 
 // input output functions
 char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize) {  
@@ -205,3 +213,15 @@ void stringToLines(char *originalString, char **linedOutput) {
   }
   linedOutput[i] = NULL;
 }
+
+void checkForDatabase(char **lines, char *databasePrompt) { // i know you can check just hte first and last lines but i want to be sure, ill write a second function that does the afformentioned
+  int i = 0;
+  while (lines[i] != NULL) {
+    
+    if (strstr(lines[i], databasePrompt)  ) {
+      lines[i] = "";
+    }
+    i++;
+  }
+}
+
