@@ -17,3 +17,4 @@ It acts as a "wrapper" for keepass-cli, becuase i prefer a tui to a cli
 - make a tui
 - parse output wihtout storing in file
 - add better err handling
+- remove magic numbers
