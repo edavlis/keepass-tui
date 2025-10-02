@@ -225,3 +225,5 @@ void checkForDatabase(char **lines, char *databasePrompt) { // i know you can ch
   }
 }
 
+
+// show --show-protected
