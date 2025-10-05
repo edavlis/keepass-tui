@@ -1,12 +1,12 @@
 CC=clang
-
-all: keepassxc-tui
-
-#keepassxc-tui: keepass-cli.c
-#	$(CC) keepass-cli.c -o keepass
-#
-#outputter: outputter.c
-#	$(CC) outputter.c -o outputter
-
-keepassxc-tui: keepassxc-tui.c
-	$(CC) -Wall -Wextra ./keepassxc-tui.c -o keepassxc-tui
+CFLAGS = -Wall -Wextra -I./include/
+SRC = $(wildcard src/*.c)
+OBJ = $(SRC:.c=.o)
+TARGET = keepassxc-tui
+all: $(TARGET)
+$(TARGET): $(OBJ)
+	$(CC) $(OBJ) -o $@
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+clean:
+	rm -vf ($OBJ) 
