@@ -1,24 +1,17 @@
 // INCLUDES
-#include <stdio.h>
-#include <termios.h>
 #include <poll.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include <termios.h>
+#include <stdio.h>
 #include <sys/poll.h>
 #include <unistd.h>
-
+#include "../include/outputParsing.h"
+#include "../include/termiosFunctions.h"
 
 
 // FUNCTION PROTOTYPES
-void enable_raw_mode(struct termios *new_terminal_settings) ;
-void reset_terminal(struct termios *old_terminal_settings) ;
-void get_terminal_dimensions( int *width, int *height) ;
-void moveCursor(int x, int y) ;
-void clearscreen() ;
 char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize);
-void stringToLines(char *originalString, char **linedOutput) ;
-void checkForDatabase(char **lines, char *databasePrompt);
-                                                            
 
 
 // MAIN FUNCTION
@@ -111,15 +104,6 @@ int main(int argc, char *argv[]) {
           memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
           readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,128*128);
           printf("%s", childOutputDataBuffer);
-          //stringToLines(childOutputDataBuffer,linedChildOutputDataBuffer);
-          //checkForDatabase(linedChildOutputDataBuffer,"> ");
-
-         // while (linedChildOutputDataBuffer[i] != NULL) {
-         //   if (strcmp(linedChildOutputDataBuffer[i], "") != 0) {
-         //     printf("%s\n",linedChildOutputDataBuffer[i]);
-         //   }
-         //   i++;
-         // }
           fflush(stdout);
         }
 
@@ -145,35 +129,9 @@ int main(int argc, char *argv[]) {
 
 
 
+// stringtolines checkfordatabase removefirstlastline
 // FUNCTIONS 
 // termios functions
-void enable_raw_mode(struct termios *new_terminal_settings) {
-  new_terminal_settings->c_lflag &= ~( ICANON | ECHO);
-  tcsetattr(STDIN_FILENO,TCSANOW, new_terminal_settings);
-}
-
-void reset_terminal(struct termios *old_terminal_settings) {
-  tcsetattr(STDIN_FILENO,TCSANOW,old_terminal_settings);
-}
-
-void get_terminal_dimensions( int *width, int *height) {
-   
-  struct winsize windowSize;
-  ioctl(STDIN_FILENO,TIOCGWINSZ, &windowSize);
-
-  *width = windowSize.ws_col;
-  *height = windowSize.ws_row;
-
-}
-
-void moveCursor(int x, int y) {
-  printf("\033[%d;%dH", y, x);
-}
-
-void clearscreen() {
-  printf("\033[2J");
-    
-}
 
 
 // input output functions
@@ -200,30 +158,3 @@ char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize) {
     
   }
 
-void stringToLines(char *originalString, char **linedOutput) {
-  
-  char *line;
-  line = strtok(originalString, "\n"); 
-  linedOutput[0] = line;
-  int i = 0;
-  while (line != NULL) {
-    linedOutput[i] = line;
-    i++;
-    line = strtok(NULL, "\n"); 
-  }
-  linedOutput[i] = NULL;
-}
-
-void checkForDatabase(char **lines, char *databasePrompt) { // i know you can check just hte first and last lines but i want to be sure, ill write a second function that does the afformentioned
-  int i = 0;
-  while (lines[i] != NULL) {
-    
-    if (strstr(lines[i], databasePrompt)  ) {
-      lines[i] = "";
-    }
-    i++;
-  }
-}
-
-
-// show --show-protected
