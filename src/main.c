@@ -1,4 +1,5 @@
 // INCLUDES
+#include <malloc.h>
 #include <poll.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -82,29 +83,41 @@ int main(int argc, char *argv[]) {
         close(out_of_child[1]);
 
       // make buffers to write to
-        char keyboard_input_buffer[64*8] = "";
-        char childOutputDataBuffer[64*8];
-        char *linedChildOutputDataBuffer[64*8];
+        char keyboard_input_buffer[64*8] = {0};
+        char childOutputDataBuffer[64*8] = {0};
+        char *linedChildOutputDataBuffer[64*8] = {0};
 
 
 
 
     moveCursor(1,1);
     clearscreen();
-    // main part of main function
+    // main while loop
+    
       while (1) {
 
         int CHILDOUT_ready=poll(STDIN_CHILD_filedescriptors, 2, -1);
         if (CHILDOUT_ready == -1) {
           printf("poll failed");
-        }
+       }
 
         if (STDIN_CHILD_filedescriptors[0].revents & POLLIN) {
+          // printing
+            memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
+            memset(linedChildOutputDataBuffer,0,sizeof(linedChildOutputDataBuffer));
+            readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,sizeof(childOutputDataBuffer));
+            stringToLines(childOutputDataBuffer,linedChildOutputDataBuffer);
+
           int i = 0;
-          memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
-          readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,128*128);
-          printf("%s", childOutputDataBuffer);
-          fflush(stdout);
+               while (linedChildOutputDataBuffer[i] != NULL ) {
+                  printf("%s", linedChildOutputDataBuffer[i]);
+                  fflush(stdout);
+                  free(linedChildOutputDataBuffer[i]);
+                  i++;
+                 
+          }
+
+            
         }
 
         // get ketboard input
@@ -152,7 +165,6 @@ char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize) {
     
       return NULL;
     }
-    fflush(stdout);
 
     return buffer;
     
