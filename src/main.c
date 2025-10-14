@@ -14,6 +14,25 @@
 // FUNCTION PROTOTYPES
 char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize);
 
+char* getDatabaseName(char *line) 
+{
+  int found = 0;
+  char* wordBegining;
+  char* lineEnd;
+  if (((wordBegining = strstr(line, "Name ")) != NULL) && ((lineEnd = strstr(line, ">\n")) != NULL))  {
+    found = 1;
+        wordBegining += 5;
+      } else {
+      found = 0;
+      }
+
+  if (found == 1) {
+  return wordBegining;
+  } else {
+  return NULL;
+  }
+}
+
 
 // MAIN FUNCTION
 int main(int argc, char *argv[]) {
@@ -62,6 +81,7 @@ int main(int argc, char *argv[]) {
       dup2(in_to_child[0], STDIN_FILENO); // CHILD STDINPUT now comes froem the intochild pipe
 
     
+
       execlp("keepassxc-cli","keepassxc-cli", "open" , argv[1] , NULL);
       close(in_to_child[0]);
       close(out_of_child[1]);
@@ -93,8 +113,9 @@ int main(int argc, char *argv[]) {
     moveCursor(1,1);
     clearscreen();
     // main while loop
-    
+   int setup = 0; 
       while (1) {
+
 
         int CHILDOUT_ready=poll(STDIN_CHILD_filedescriptors, 2, -1);
         if (CHILDOUT_ready == -1) {
@@ -110,7 +131,7 @@ int main(int argc, char *argv[]) {
 
           int i = 0;
                while (linedChildOutputDataBuffer[i] != NULL ) {
-                  printf("%s", linedChildOutputDataBuffer[i]);
+                  printf("line %d: %s",i, linedChildOutputDataBuffer[i]);
                   fflush(stdout);
                   free(linedChildOutputDataBuffer[i]);
                   i++;
@@ -133,6 +154,25 @@ int main(int argc, char *argv[]) {
         }
 
 
+        if (setup == 0) {
+          printf("initialising setup");
+          if (write(in_to_child[1], "db-info\n", 8) == -1) {
+            printf("Failed to write to child write pipe");
+          }
+        if (STDIN_CHILD_filedescriptors[0].revents & POLLIN) {
+            memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
+            memset(linedChildOutputDataBuffer,0,sizeof(linedChildOutputDataBuffer));
+            readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,sizeof(childOutputDataBuffer));
+            stringToLines(childOutputDataBuffer,linedChildOutputDataBuffer);
+
+          int i = 0;
+               while (linedChildOutputDataBuffer[i] != NULL ) {
+                  char *databaseString = getDatabaseName(linedChildOutputDataBuffer[i]);
+                  free(linedChildOutputDataBuffer[i]);
+                  i++;
+          setup++; 
+          }
+        }
         } 
 
        close(in_to_child[1]);
@@ -140,14 +180,8 @@ int main(int argc, char *argv[]) {
 
       }
 
+}
 
-
-// stringtolines checkfordatabase removefirstlastline
-// FUNCTIONS 
-// termios functions
-
-
-// input output functions
 char* readFromFileDescriptor(int filedescriptor, char* buffer, int buffersize) {  
   
  
