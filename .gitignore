@@ -1,5 +1,7 @@
-./test/
-./keepassxc-tui
-./a.out
-./outputter
-./keepass
+test/
+keepassxc-tui
+outputter
+keepass
+src/*.o
+old/
+*.kbdx

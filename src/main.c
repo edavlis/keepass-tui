@@ -1,5 +1,6 @@
 // INCLUDES
 #include <malloc.h>
+#include <pty.h>
 #include <poll.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -52,6 +53,8 @@ int main(int argc, char *argv[]) {
     struct termios new_terminal_settings, old_terminal_settings; 
     tcgetattr(STDIN_FILENO, &new_terminal_settings);
     tcgetattr(STDIN_FILENO, &old_terminal_settings);
+
+    int masterFd;
   
   
   // create pipes
@@ -64,7 +67,7 @@ int main(int argc, char *argv[]) {
 
 
  // create child and parent proccess
-    int pid;
+    pid_t pid = forkpty(&masterFd, NULL, NULL, NULL);
 
     if ( (pid = fork()) == -1) {
       printf("Failed to fork process");
@@ -75,12 +78,6 @@ int main(int argc, char *argv[]) {
     if (pid == 0) {
       close(in_to_child[1]);
       close(out_of_child[0]);
-
-      dup2(out_of_child[1], STDOUT_FILENO); // redirect child STDOUT with out of child pipe
-      dup2(out_of_child[1], STDERR_FILENO); // redirect child STDOUT with out of child pipe
-      dup2(in_to_child[0], STDIN_FILENO); // CHILD STDINPUT now comes froem the intochild pipe
-
-    
 
       execlp("keepassxc-cli","keepassxc-cli", "open" , argv[1] , NULL);
       close(in_to_child[0]);
@@ -126,7 +123,7 @@ int main(int argc, char *argv[]) {
           // printing
             memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
             memset(linedChildOutputDataBuffer,0,sizeof(linedChildOutputDataBuffer));
-            readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,sizeof(childOutputDataBuffer));
+            read(masterFd, childOutputDataBuffer, sizeof(childOutputDataBuffer));
             stringToLines(childOutputDataBuffer,linedChildOutputDataBuffer);
 
           int i = 0;
@@ -146,7 +143,7 @@ int main(int argc, char *argv[]) {
           memset(keyboard_input_buffer,0,sizeof(keyboard_input_buffer));
           read(STDIN_FILENO, keyboard_input_buffer, sizeof(keyboard_input_buffer));
 
-          if (write(in_to_child[1], keyboard_input_buffer, strlen(keyboard_input_buffer)) == -1) {
+          if (write(masterFd, keyboard_input_buffer, strlen(keyboard_input_buffer)) == -1) {
             printf("Failed to write to child write pipe");
             
 
@@ -154,26 +151,7 @@ int main(int argc, char *argv[]) {
         }
 
 
-        if (setup == 0) {
-          printf("initialising setup");
-          if (write(in_to_child[1], "db-info\n", 8) == -1) {
-            printf("Failed to write to child write pipe");
-          }
-        if (STDIN_CHILD_filedescriptors[0].revents & POLLIN) {
-            memset(childOutputDataBuffer,0,sizeof(childOutputDataBuffer));
-            memset(linedChildOutputDataBuffer,0,sizeof(linedChildOutputDataBuffer));
-            readFromFileDescriptor(out_of_child[0], childOutputDataBuffer,sizeof(childOutputDataBuffer));
-            stringToLines(childOutputDataBuffer,linedChildOutputDataBuffer);
 
-          int i = 0;
-               while (linedChildOutputDataBuffer[i] != NULL ) {
-                  char *databaseString = getDatabaseName(linedChildOutputDataBuffer[i]);
-                  free(linedChildOutputDataBuffer[i]);
-                  i++;
-          setup++; 
-          }
-        }
-        } 
 
        close(in_to_child[1]);
        close(out_of_child[0]);
