@@ -58,11 +58,11 @@ int main(int argc, char *argv[]) {
   
   
   // create pipes
-    int in_to_child[2];
-    int out_of_child[2];
-
-    pipe(in_to_child);
-    pipe(out_of_child);
+//    int in_to_child[2];
+//    int out_of_child[2];
+//
+//    pipe(in_to_child);
+//    pipe(out_of_child);
 
 
 
@@ -76,19 +76,19 @@ int main(int argc, char *argv[]) {
 
     // child proc
     if (pid == 0) {
-      close(in_to_child[1]);
-      close(out_of_child[0]);
+//      close(in_to_child[1]);
+//      close(out_of_child[0]);
 
       execlp("keepassxc-cli","keepassxc-cli", "open" , argv[1] , NULL);
-      close(in_to_child[0]);
-      close(out_of_child[1]);
+//      close(in_to_child[0]);
+//      close(out_of_child[1]);
 
     }  
 
 
         struct pollfd STDIN_CHILD_filedescriptors[2]; // 0  is child 1 is stdin
 
-        STDIN_CHILD_filedescriptors[0].fd = out_of_child[0];
+        STDIN_CHILD_filedescriptors[0].fd = masterFd;
         STDIN_CHILD_filedescriptors[0].events = POLLIN;
         STDIN_CHILD_filedescriptors[1].fd = STDIN_FILENO;
         STDIN_CHILD_filedescriptors[1].events = POLLIN;
@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
         
 
       // close file descriptors
-        close(in_to_child[0]);
-        close(out_of_child[1]);
+//        close(in_to_child[0]);
+//        close(out_of_child[1]);
 
       // make buffers to write to
         char keyboard_input_buffer[64*8] = {0};
@@ -153,8 +153,8 @@ int main(int argc, char *argv[]) {
 
 
 
-       close(in_to_child[1]);
-       close(out_of_child[0]);
+//       close(in_to_child[1]);
+//       close(out_of_child[0]);
 
       }
 
